@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tra Giá Nước Hoa</title>
+<style>
+  :root {
+    --blue: #1565c0; --blue-light: #e3f0ff; --blue-dark: #0d3f8f;
+    --bg: #fff; --bg2: #f0f5fb; --border: #ccd9ee;
+    --text: #1a1a1a; --text2: #6b6b6b; --text3: #999;
+    --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg2); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: var(--blue); padding: 14px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(21,101,192,.3); }
+  .header-icon { font-size: 22px; }
+  .header-text h1 { font-size: 16px; font-weight: 700; color: #fff; }
+
+  /* TAB BAR */
+  .tab-bar { display: flex; background: var(--bg); border-bottom: 2px solid var(--border); position: sticky; top: 52px; z-index: 98; }
+  .tab-btn { flex: 1; padding: 11px 8px; font-size: 13px; font-weight: 600; color: var(--text2); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* CONTROLS */
+  .controls { background: var(--bg); padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .cat-scroll { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .cat-scroll::-webkit-scrollbar { display: none; }
+  .cat-btn { flex-shrink: 0; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text2); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all .15s; }
+  .cat-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .url-row { display: flex; gap: 6px; align-items: center; }
+  .url-row input { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text); background: var(--bg2); outline: none; }
+  .url-row input:focus { border-color: var(--blue); background: #fff; }
+  .url-row input::placeholder { color: var(--text3); }
+  .btn-clear { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); color: var(--text3); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .btn-clear.hidden { opacity: 0; pointer-events: none; }
+  .url-hint { font-size: 11px; color: var(--text3); padding: 0 2px; }
+  .url-hint.active-custom { color: var(--blue); font-weight: 500; }
+  .btn-fetch { width: 100%; padding: 11px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .btn-fetch:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* STATUS */
+  .status-bar { padding: 8px 16px; font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; min-height: 34px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+  .dot.loading { background: #ff9800; animation: pulse 1s infinite; }
+  .dot.error { background: #c62828; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* GRID */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 12px; }
+  .card { background: var(--bg); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; }
+  .img-wrap { width: 100%; aspect-ratio: 1; background: var(--bg2); overflow: hidden; position: relative; }
+  .img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .badge-sale { position: absolute; top: 6px; left: 6px; background: #e53935; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+  .card-body { padding: 8px 10px; flex: 1; display: flex; flex-direction: column; }
+  .card-name { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; flex: 1; }
+  .price-box { margin-top: 7px; }
+  .price-old { font-size: 11px; color: var(--text3); text-decoration: line-through; }
+  .price-current { font-size: 14px; font-weight: 700; color: var(--blue); }
+  .card-link { display: block; margin: 4px 10px 6px; padding: 5px; text-align: center; border: 1px solid var(--blue); border-radius: 8px; color: var(--blue); font-size: 11px; font-weight: 600; text-decoration: none; background: var(--blue-light); }
+  .btn-save { display: block; margin: 0 10px 10px; padding: 6px; text-align: center; border: none; border-radius: 8px; background: #e8f5e9; color: #2e7d32; font-size: 11px; font-weight: 600; cursor: pointer; }
+  .btn-save:active { background: #2e7d32; color: #fff; }
+
+  /* DANH SÁCH TAB */
+  .list-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; background: var(--bg); border-bottom: 1px solid var(--border); gap: 8px; }
+  .list-header-left { font-size: 13px; font-weight: 600; color: var(--text); }
+  .list-header-left span { font-size: 11px; color: var(--text2); font-weight: 400; margin-left: 6px; }
+  .btn-export { padding: 7px 14px; background: #2e7d32; color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-clear-list { padding: 7px 12px; background: #ffebee; color: #c62828; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  /* BẢNG EXCEL */
+  .table-wrap { overflow-x: auto; padding: 0 0 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 480px; }
+  thead tr { background: var(--blue); color: #fff; }
+  thead th { padding: 10px 8px; text-align: left; font-weight: 600; white-space: nowrap; }
+  thead th:first-child { width: 32px; text-align: center; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:hover { background: var(--blue-light); }
+  tbody td { padding: 9px 8px; vertical-align: middle; }
+  tbody td:first-child { text-align: center; color: var(--text3); font-size: 11px; }
+  .td-name { font-weight: 500; color: var(--text); line-height: 1.4; }
+  .td-name a { color: var(--blue); text-decoration: none; font-size: 11px; display: block; margin-top: 2px; }
+  .td-price { font-weight: 700; color: var(--blue); white-space: nowrap; }
+  .td-old { color: var(--text3); text-decoration: line-through; font-size: 11px; white-space: nowrap; }
+  .td-sale { background: #fff3e0; color: #e65100; font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
+  .td-cat { font-size: 11px; color: var(--text2); }
+  .td-del { text-align: center; }
+  .btn-del-row { background: none; border: none; color: #ccc; font-size: 16px; cursor: pointer; padding: 0 4px; }
+  .btn-del-row:hover { color: #c62828; }
+
+  .empty-box { text-align: center; padding: 50px 24px; color: var(--text2); }
+  .empty-box .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-box p { font-size: 14px; }
+  .empty-box small { font-size: 12px; color: var(--text3); display: block; margin-top: 6px; }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px 24px; }
+  .page-btn { padding: 8px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text2); font-size: 13px; cursor: pointer; }
+  .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .page-info { font-size: 13px; color: var(--text2); font-weight: 500; min-width: 70px; text-align: center; }
+
+  .spinner { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .skeleton { background: linear-gradient(90deg,#e8eef7 25%,#f4f7fc 50%,#e8eef7 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  .page-section { display: none; }
+  .btn-save { position: relative; }
+  .btn-save.loading { opacity: .7; pointer-events: none; }
+  .btn-save.loading::after { content: ''; display: inline-block; width: 10px; height: 10px; border: 2px solid #2e7d32; border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; margin-left: 5px; vertical-align: middle; }
+  .td-scent { font-size: 11px; color: var(--text2); max-width: 200px; line-height: 1.5; }
+  .td-scent span { display: block; }
+  .td-scent .s-label { color: var(--text3); font-size: 10px; }
+  .page-section.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🌸</div>
+  <div class="header-text"><h1>Tra Giá Nước Hoa</h1></div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('search')">🔍 Tìm giá</button>
+  <button class="tab-btn" onclick="switchTab('list')" id="tabList">📋 Danh sách <span id="listCount" style="background:#1565c0;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;display:none">0</span></button>
+</div>
+
+<!-- TAB TÌM GIÁ -->
+<div class="page-section active" id="secSearch">
+  <div class="controls">
+    <div class="cat-scroll">
+      <button class="cat-btn active" data-url="https://perfume168.com/loai-nuoc-hoa/nuoc-hoa-nam/" data-label="Nước hoa nam">🧔 Nam</button>
+      <button class="cat-btn" data-url="https://perfume168.com/loai-nuoc-hoa/nuoc-hoa-nu/" data-label="Nước hoa nữ">👩 Nữ</button>
+      <button class="cat-btn" data-url="https://perfume168.com/loai-nuoc-hoa/nuoc-hoa-chiet/" data-label="Nước hoa chiết">💧 Chiết</button>
+      <button class="cat-btn" data-url="https://perfume168.com/nuoc-hoa-khuyen-mai-hot/" data-label="Khuyến mãi">🔥 Khuyến mãi</button>
+      <button class="cat-btn" data-url="https://perfume168.com/" data-label="Tất cả">🛍️ Tất cả</button>
+    </div>
+    <div class="url-row">
+      <input type="url" id="urlInput" placeholder="Dán link danh mục từ bất kỳ web nào…" oninput="onUrlInput()"/>
+      <button class="btn-clear hidden" id="btnClear" onclick="clearUrl()">✕</button>
+    </div>
+    <div class="url-hint" id="urlHint">Chọn danh mục phía trên hoặc dán link tự do</div>
+    <button class="btn-fetch" id="btnFetch" onclick="doFetch(1)">
+      <span>🔍</span> Lấy sản phẩm
+    </button>
+  </div>
+  <div class="status-bar" id="statusBar"></div>
+  <div id="content"></div>
+</div>
+
+<!-- TAB DANH SÁCH -->
+<div class="page-section" id="secList">
+  <div class="list-header">
+    <div class="list-header-left">
+      📋 Danh sách đã lưu <span id="listTotal">0 sản phẩm</span>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn-export" onclick="exportCSV()">⬇ Xuất CSV</button>
+      <button class="btn-clear-list" onclick="clearList()">🗑 Xoá hết</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table id="listTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Tên sản phẩm</th>
+          <th>Giá hiện</th>
+          <th>Giá gốc</th>
+          <th>Sale</th>
+          <th>Xuất xứ</th>
+          <th>Nhóm hương</th>
+          <th>Hương đầu / giữa / cuối</th>
+          <th>Lưu hương</th>
+          <th>Danh mục</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="listBody"></tbody>
+    </table>
+  </div>
+  <div class="empty-box" id="listEmpty">
+    <div class="icon">📋</div>
+    <p>Chưa có sản phẩm nào</p>
+    <small>Bấm ✚ Lưu vào danh sách ở tab Tìm giá</small>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://nuoc-hoa-proxy.tamthanhbl12.workers.dev';
+let selUrl = 'https://perfume168.com/loai-nuoc-hoa/nuoc-hoa-nam/';
+let selLabel = 'Nước hoa nam';
+let customUrl = '';
+let savedList = JSON.parse(localStorage.getItem('nhoa_list') || '[]');
+
+// ===== TAB =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  if (tab === 'search') {
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    document.getElementById('secSearch').classList.add('active');
+  } else {
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('secList').classList.add('active');
+    renderList();
+  }
+}
+
+// ===== DANH MỤC =====
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selUrl = btn.dataset.url;
+    selLabel = btn.dataset.label || 'Danh mục';
+    customUrl = '';
+    document.getElementById('urlInput').value = '';
+    document.getElementById('btnClear').classList.add('hidden');
+    document.getElementById('urlHint').textContent = 'Chọn danh mục phía trên hoặc dán link tự do';
+    document.getElementById('urlHint').classList.remove('active-custom');
+  });
+});
+
+function onUrlInput() {
+  const val = document.getElementById('urlInput').value.trim();
+  if (val) {
+    document.getElementById('btnClear').classList.remove('hidden');
+    customUrl = val;
+    selLabel = val.replace('https://','').split('/')[1] || 'Link tự do';
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('urlHint').textContent = '🔗 Sẽ lấy từ link này';
+    document.getElementById('urlHint').classList.add('active-custom');
+  } else { clearUrl(); }
+}
+
+function clearUrl() {
+  document.getElementById('urlInput').value = '';
+  document.getElementById('btnClear').classList.add('hidden');
+  customUrl = '';
+  const first = document.querySelector('.cat-btn');
+  if (first) { first.classList.add('active'); selUrl = first.dataset.url; selLabel = first.dataset.label; }
+  document.getElementById('urlHint').textContent = 'Chọn danh mục phía trên hoặc dán link tự do';
+  document.getElementById('urlHint').classList.remove('active-custom');
+}
+
+function getTargetUrl(page) {
+  const base = customUrl || selUrl;
+  if (page <= 1) return base;
+  return base.replace(/\/$/, '') + '/page/' + page + '/';
+}
+
+function setStatus(msg, type) {
+  const bar = document.getElementById('statusBar');
+  const cls = type === 'loading' ? 'loading' : type === 'error' ? 'error' : '';
+  bar.innerHTML = msg ? `<div class="dot ${cls}"></div><span>${msg}</span>` : '';
+}
+
+// ===== FETCH =====
+async function getHtml(url) {
+  const res = await fetch(`${WORKER}?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error('Worker lỗi: ' + res.status);
+  const d = await res.json();
+  if (d.error) throw new Error(d.error);
+  if (!d.html || d.html.length < 500) throw new Error('Không lấy được HTML');
+  return d.html;
+}
+
+function parseProds(html) {
+  const items = [];
+  const blockRe = /class="[^"]*col-xxs-6[^"]*woocommerce[^"]*product[^"]*"[\s\S]*?(?=class="col-xxs-6[^"]*woocommerce|<div class="col-sl-12">|$)/g;
+  const blocks = html.match(blockRe) || [];
+  const altBlocks = html.split('class="sp"').slice(1);
+  const useBlocks = blocks.length > 0 ? blocks : altBlocks;
+
+  const parseBlock = (block) => {
+    const nameMatch = block.match(/class="[^"]*title-pro-cat[^"]*"[^>]*>([^<]+)</);
+    if (!nameMatch) return null;
+    const name = nameMatch[1].replace(/&amp;/g,'&').replace(/&#038;/g,'&').replace(/&#8211;/g,'–').replace(/&#8217;/g,"'").trim();
+    const linkMatch = block.match(/href="(https:\/\/perfume168\.com\/nuoc-hoa\/[^"]+)"/);
+    const link = linkMatch ? linkMatch[1] : '';
+    const imgMatch = block.match(/data-lazy-src="(https:\/\/[^"]+(?:\.jpg|\.png|\.webp)[^"]*)"/);
+    const noscriptMatch = block.match(/<noscript>[\s\S]*?src="(https:\/\/[^"]+(?:\.jpg|\.png)[^"]*)"[\s\S]*?<\/noscript>/);
+    const img = imgMatch ? imgMatch[1] : (noscriptMatch ? noscriptMatch[1] : '');
+    const saleMatch = block.match(/class="percent"[^>]*>\s*([^<]+)\s*</);
+    const sale = saleMatch ? saleMatch[1].trim() : '';
+    const insMatch = block.match(/<ins[^>]*>[\s\S]*?<bdi>([\d.,]+[^<]*)<\/bdi>/);
+    const delMatch = block.match(/<del[^>]*>[\s\S]*?<bdi>([\d.,]+[^<]*)<\/bdi>/);
+    const anyBdi = block.match(/<div class="gia">[\s\S]*?<bdi>([\d.,]+[^<]*)<\/bdi>/);
+    let priceCurrent = insMatch ? insMatch[1].trim() : (anyBdi ? anyBdi[1].trim() : '');
+    let priceOld = delMatch ? delMatch[1].trim() : '';
+    if (priceCurrent) priceCurrent = priceCurrent.replace(/&nbsp;/g,' ').replace(/&#8363;/g,'₫').trim();
+    if (priceOld) priceOld = priceOld.replace(/&nbsp;/g,' ').replace(/&#8363;/g,'₫').trim();
+    return { name, link, img, priceCurrent, priceOld, sale };
+  };
+
+  if (blocks.length > 0) {
+    blocks.forEach(b => { const i = parseBlock(b); if (i && i.name) items.push(i); });
+  } else {
+    const allNames = [...html.matchAll(/href="(https:\/\/perfume168\.com\/nuoc-hoa\/[^"]+)"[^>]*>\s*<h2[^>]*class="[^"]*title-pro-cat[^"]*"[^>]*>([^<]+)<\/h2>/g)];
+    allNames.forEach(m => items.push({ name: m[2].replace(/&amp;/g,'&').trim(), link: m[1], img:'', priceCurrent:'', priceOld:'', sale:'' }));
+  }
+  return items;
+}
+
+async function doFetch(page) {
+  const btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Đang tải...';
+  setStatus('Đang kết nối…', 'loading');
+  document.getElementById('content').innerHTML = renderSkeleton();
+  try {
+    const html = await getHtml(getTargetUrl(page));
+    const prods = parseProds(html);
+    if (!prods.length) {
+      document.getElementById('content').innerHTML = `<div class="empty-box"><div class="icon">🔍</div><p>Không tìm thấy sản phẩm nào</p><small>Thử chọn danh mục khác.</small></div>`;
+      setStatus('', '');
+    } else {
+      renderGrid(prods);
+      renderPagination(page, html);
+      setStatus(`${prods.length} sản phẩm • Trang ${page}`, 'ok');
+    }
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div class="empty-box"><div class="icon">😔</div><p>${e.message}</p></div>`;
+    setStatus('Lỗi kết nối', 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<span>🔍</span> Lấy sản phẩm';
+}
+
+function renderSkeleton() {
+  let h = '<div class="grid">';
+  for (let i = 0; i < 6; i++) h += `<div class="card"><div class="img-wrap skeleton" style="aspect-ratio:1"></div><div class="card-body" style="gap:6px;display:flex;flex-direction:column;padding-top:10px"><div class="skeleton" style="height:13px;width:90%"></div><div class="skeleton" style="height:13px;width:65%"></div><div class="skeleton" style="height:17px;width:55%;margin-top:6px"></div></div></div>`;
+  return h + '</div>';
+}
+
+const fallback = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23eef3fb'/%3E%3Ctext x='50' y='58' text-anchor='middle' font-size='36' fill='%23a0b8d8'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E";
+
+function renderGrid(prods) {
+  let h = '<div class="grid">';
+  prods.forEach((p, i) => {
+    const pJson = encodeURIComponent(JSON.stringify({...p, category: selLabel}));
+    h += `<div class="card">
+      <div class="img-wrap">
+        <img src="${p.img || fallback}" alt="${p.name}" loading="lazy" onerror="this.src='${fallback}'">
+        ${p.sale ? `<span class="badge-sale">${p.sale}</span>` : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${p.name}</div>
+        <div class="price-box">
+          ${p.priceOld ? `<div class="price-old">${p.priceOld}</div>` : ''}
+          <div class="price-current">${p.priceCurrent || '—'}</div>
+        </div>
+      </div>
+      ${p.link ? `<a class="card-link" href="${p.link}" target="_blank">Xem chi tiết ↗</a>` : ''}
+      <button class="btn-save" onclick="saveItem('${pJson}')">✚ Lưu vào danh sách</button>
+    </div>`;
+  });
+  h += '</div>';
+  document.getElementById('content').innerHTML = h;
+}
+
+function renderPagination(page, html) {
+  const hasNext = /class="next page-numbers"|rel="next"|href="[^"]*\/page\/\d+"/.test(html);
+  if (!hasNext && page <= 1) return;
+  const pag = document.createElement('div');
+  pag.className = 'pagination';
+  pag.innerHTML = `
+    <button class="page-btn" ${page<=1?'disabled':''} onclick="doFetch(${page-1})">← Trước</button>
+    <span class="page-info">Trang ${page}</span>
+    <button class="page-btn" ${!hasNext?'disabled':''} onclick="doFetch(${page+1})">Sau →</button>`;
+  document.getElementById('content').appendChild(pag);
+}
+
+// ===== DANH SÁCH =====
+// Parse thông tin chi tiết từ trang sản phẩm
+function parseDetail(html) {
+  const info = { xuatXu: '', dungTich: '', nhomHuong: '', huongDau: '', huongGiua: '', huongCuoi: '', luuHuong: '' };
+
+  // Thử lấy từ og:description (nhanh và đáng tin)
+  const ogMatch = html.match(/property="og:description"\s+content="([^"]+)"/);
+  const ogText = ogMatch ? ogMatch[1] : '';
+
+  // Lấy từ div.info-product p (đầy đủ hơn)
+  const infoMatch = html.match(/class="info-product"[\s\S]{0,500}<p>([\s\S]*?)<\/p>/);
+  const rawText = infoMatch
+    ? infoMatch[1].replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g,' ')
+    : ogText.replace(/\\n/g, '\n');
+
+  const allText = rawText + '\n' + ogText;
+
+  // Parse từng dòng
+  allText.split('\n').forEach(line => {
+    line = line.replace(/&amp;/g,'&').replace(/&#\d+;/g,'').trim();
+    if (!line) return;
+    const kv = (key, target) => {
+      if (line.includes(key)) {
+        const val = line.split(key).slice(1).join(key).trim();
+        if (val && !info[target]) info[target] = val;
+      }
+    };
+    kv('Xuất xứ:', 'xuatXu');
+    kv('Dung tích:', 'dungTich');
+    kv('Nhóm hương:', 'nhomHuong');
+    kv('Hương đầu:', 'huongDau');
+    kv('Hương giữa:', 'huongGiua');
+    kv('Hương cuối:', 'huongCuoi');
+    kv('Độ lưu hương:', 'luuHuong');
+  });
+
+  return info;
+}
+
+async function saveItem(pJson) {
+  const btn = event.target;
+  const p = JSON.parse(decodeURIComponent(pJson));
+  if (savedList.find(x => x.name === p.name)) {
+    alert('Sản phẩm này đã có trong danh sách!');
+    return;
+  }
+  // Fetch chi tiết nếu có link
+  if (p.link) {
+    btn.classList.add('loading');
+    btn.textContent = 'Đang lấy thông tin...';
+    try {
+      const html = await getHtml(p.link);
+      const detail = parseDetail(html);
+      Object.assign(p, detail);
+    } catch(e) { /* bỏ qua, vẫn lưu */ }
+    btn.classList.remove('loading');
+  }
+  p.savedAt = new Date().toLocaleDateString('vi-VN');
+  savedList.push(p);
+  localStorage.setItem('nhoa_list', JSON.stringify(savedList));
+  updateListCount();
+  btn.textContent = '✔ Đã lưu';
+  btn.style.background = '#c8e6c9';
+  setTimeout(() => { btn.textContent = '✚ Lưu vào danh sách'; btn.style.background = ''; }, 1500);
+}
+
+function updateListCount() {
+  const n = savedList.length;
+  const badge = document.getElementById('listCount');
+  badge.textContent = n;
+  badge.style.display = n > 0 ? 'inline' : 'none';
+}
+
+function renderList() {
+  const body = document.getElementById('listBody');
+  const empty = document.getElementById('listEmpty');
+  document.getElementById('listTotal').textContent = savedList.length + ' sản phẩm';
+  if (!savedList.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('listTable').style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  document.getElementById('listTable').style.display = 'table';
+  body.innerHTML = savedList.map((p, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td class="td-name">
+        ${p.name}
+        ${p.link ? `<a href="${p.link}" target="_blank">↗ Xem</a>` : ''}
+      </td>
+      <td class="td-price">${p.priceCurrent || '—'}</td>
+      <td class="td-old">${p.priceOld || ''}</td>
+      <td>${p.sale ? `<span class="td-sale">${p.sale}</span>` : ''}</td>
+      <td style="font-size:11px;color:var(--text2)">${p.xuatXu || '—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${p.nhomHuong || '—'}</td>
+      <td class="td-scent">
+        ${p.huongDau ? `<span><span class="s-label">Đầu:</span> ${p.huongDau}</span>` : ''}
+        ${p.huongGiua ? `<span><span class="s-label">Giữa:</span> ${p.huongGiua}</span>` : ''}
+        ${p.huongCuoi ? `<span><span class="s-label">Cuối:</span> ${p.huongCuoi}</span>` : ''}
+        ${!p.huongDau && !p.huongGiua && !p.huongCuoi ? '—' : ''}
+      </td>
+      <td style="font-size:11px;color:var(--text2)">${p.luuHuong || '—'}</td>
+      <td class="td-cat">${p.category || ''}</td>
+      <td class="td-del">
+        <button class="btn-del-row" onclick="refreshDetail(${i})" title="Lấy lại thông tin" style="color:#1565c0;font-size:14px">🔄</button>
+        <button class="btn-del-row" onclick="deleteItem(${i})" title="Xoá">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function refreshDetail(i) {
+  const p = savedList[i];
+  if (!p || !p.link) { alert('Không có link sản phẩm!'); return; }
+  const btn = event.target;
+  btn.textContent = '⏳';
+  btn.style.pointerEvents = 'none';
+  try {
+    const html = await getHtml(p.link);
+    const detail = parseDetail(html);
+    // Cập nhật thông tin chi tiết
+    Object.assign(savedList[i], detail);
+    // Lấy lại giá nếu chưa có
+    if (!p.priceCurrent) {
+      const priceMatch = html.match(/<div class="price-sing">[\s\S]*?<bdi>([\d.,]+[^<]*)<\/bdi>/);
+      if (priceMatch) savedList[i].priceCurrent = priceMatch[1].replace(/&nbsp;/g,' ').replace(/&#8363;/g,'₫').trim();
+    }
+    localStorage.setItem('nhoa_list', JSON.stringify(savedList));
+    renderList();
+  } catch(e) {
+    alert('Lỗi: ' + e.message);
+    btn.textContent = '🔄';
+    btn.style.pointerEvents = '';
+  }
+}
+
+function deleteItem(i) {
+  savedList.splice(i, 1);
+  localStorage.setItem('nhoa_list', JSON.stringify(savedList));
+  updateListCount();
+  renderList();
+}
+
+function clearList() {
+  if (!savedList.length) return;
+  if (!confirm('Xoá toàn bộ danh sách?')) return;
+  savedList = [];
+  localStorage.setItem('nhoa_list', JSON.stringify(savedList));
+  updateListCount();
+  renderList();
+}
+
+function exportCSV() {
+  if (!savedList.length) { alert('Danh sách trống!'); return; }
+  const rows = [['STT','Tên sản phẩm','Giá hiện tại','Giá gốc','Sale','Xuất xứ','Nhóm hương','Hương đầu','Hương giữa','Hương cuối','Lưu hương','Danh mục','Link','Ngày lưu']];
+  savedList.forEach((p, i) => {
+    rows.push([i+1, p.name, p.priceCurrent||'', p.priceOld||'', p.sale||'', p.xuatXu||'', p.nhomHuong||'', p.huongDau||'', p.huongGiua||'', p.huongCuoi||'', p.luuHuong||'', p.category||'', p.link||'', p.savedAt||'']);
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nuoc-hoa-' + new Date().toLocaleDateString('vi-VN').replace(/\//g,'-') + '.csv';
+  a.click();
+}
+
+// Init
+updateListCount();
+</script>
+</body>
+</html>
